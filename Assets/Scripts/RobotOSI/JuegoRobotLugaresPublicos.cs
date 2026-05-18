@@ -495,6 +495,15 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
 
     // ------------------------------------------------------------------------------------------------------------------
 
+    public bool EvaluarRespuesta(RespuestaAPI respuestaAPI, string s)
+    {
+        if (respuestaAPI.predicted_text.Contains(s))
+        {
+            return true;
+        }
+        return false;
+    }
+
     public IEnumerator ProcesarResultadoDesdeAPI(RespuestaAPI respuesta)
     {
         if (respuesta == null)
@@ -506,15 +515,28 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
         OcultarTodos();
         panelOsiHablando.SetActive(true);
 
-        if (respuesta.respuesta)
+        bool continuar = false;
+
+        if (respuesta.success)
         {
+            if (EvaluarRespuesta(respuesta, "hospital") && preguntaActual == "hospital") continuar = true;
+            else if (EvaluarRespuesta(respuesta, "escuela") && preguntaActual == "escuela") continuar = true;
+            else if (EvaluarRespuesta(respuesta, "restaurante") && preguntaActual == "restaurante") continuar = true;
+            else if (EvaluarRespuesta(respuesta, "mercado") && preguntaActual == "mercado") continuar = true;
+            else if (EvaluarRespuesta(respuesta, "parque") && preguntaActual == "parque") continuar = true;
+        }
+
+
+        if (continuar)
+        {
+            StartCoroutine(EnviarExpresion("alegre"));
             erroresConsecutivos = 0;
             progresoPreguntas[preguntaActual] = true; // Marca como respondida
 
-            Debug.Log("Respuesta correcta: " + respuesta.texto_transcrito);
+            Debug.Log("Respuesta correcta: " + respuesta.predicted_text);
             
 
-            if (preguntaActual == "hospital")
+            if (preguntaActual.Contains("hospital"))
             {
                 //StartCoroutine(EnviarExpresion("alegre_hablando"));
                 yield return ReproducirAudio(audio40);
@@ -523,7 +545,7 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
                 MostrarConfirmacion();
                 yield return ReproducirAudio(audio13);
             }
-            else if (preguntaActual == "escuela")
+            else if (preguntaActual.Contains("escuela"))
             {
                 //StartCoroutine(EnviarExpresion("alegre_hablando"));
                 yield return ReproducirAudio(audio39);
@@ -532,7 +554,7 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
                 MostrarConfirmacion();
                 yield return ReproducirAudio(audio13);
             }
-            else if (preguntaActual == "restaurante")
+            else if (preguntaActual.Contains("restaurante"))
             {
                 //StartCoroutine(EnviarExpresion("alegre_hablando"));
                 yield return ReproducirAudio(audio38);
@@ -542,7 +564,7 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
                 MostrarConfirmacion();
                 yield return ReproducirAudio(audio13);
             }
-            else if (preguntaActual == "mercado")
+            else if (preguntaActual.Contains("mercado"))
             {
                 //StartCoroutine(EnviarExpresion("alegre_hablando"));
                 yield return ReproducirAudio(audio40);
@@ -551,7 +573,7 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
                 MostrarConfirmacion();
                 yield return ReproducirAudio(audio13);
             }
-            else if (preguntaActual == "parque")
+            else if (preguntaActual.Contains("parque"))
             {
                 //StartCoroutine(EnviarExpresion("alegre_hablando"));
                 yield return ReproducirAudio(audio42);
@@ -562,7 +584,7 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
         else
         {
             erroresConsecutivos++;
-            Debug.Log("Respuesta incorrecta (" + erroresConsecutivos + "): " + respuesta.texto_transcrito);
+            Debug.Log("Respuesta incorrecta (" + erroresConsecutivos + "): " + respuesta.predicted_text);
 
             // Retroalimentación por intento
             AudioClip audioError = erroresConsecutivos switch
@@ -580,31 +602,31 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
             if (erroresConsecutivos >= 3)
             {
                 erroresConsecutivos = 0;
-                if (preguntaActual == "hospital")
+                if (preguntaActual.Contains("hospital"))
                 {
                     progresoPreguntas[preguntaActual] = true; // Se marca aunque falló
                     yield return ReproducirAudio(audio20);
                     yield return StartCoroutine(ProcederAPreguntas());
                 }
-                else if (preguntaActual == "escuela")
+                else if (preguntaActual.Contains("escuela"))
                 {
                     progresoPreguntas[preguntaActual] = true; 
                     yield return ReproducirAudio(audio23);
                     yield return StartCoroutine(ProcederAPreguntas());
                 }
-                else if (preguntaActual == "restaurante")
+                else if (preguntaActual.Contains("restaurante"))
                 {
                     progresoPreguntas[preguntaActual] = true; 
                     yield return ReproducirAudio(audio26);
                     yield return StartCoroutine(ProcederAPreguntas());
                 }
-                else if (preguntaActual == "mercado")
+                else if (preguntaActual.Contains("mercado"))
                 {
                     progresoPreguntas[preguntaActual] = true; 
                     yield return ReproducirAudio(audio28);
                     yield return StartCoroutine(ProcederAPreguntas());
                 }
-                else if (preguntaActual == "parque")
+                else if (preguntaActual.Contains("parque"))
                 {
                     progresoPreguntas[preguntaActual] = true; 
                     yield return ReproducirAudio(audio32);
@@ -656,7 +678,7 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
 
     public IEnumerator EnviarExpresion(string expresion)
     {
-        string url = "http://raspberrypi.local:5000/accion";
+        string url = "http://192.168.0.88:5000/accion";
 
         AccionData data = new AccionData { accion = expresion };
         string json = JsonUtility.ToJson(data);
@@ -697,6 +719,7 @@ public class AccionData
 public class RespuestaAPI
 {
     public string status;
-    public bool respuesta;
-    public string texto_transcrito;
+    public bool success;
+    public string predicted_text;
+    public string created_at;
 }

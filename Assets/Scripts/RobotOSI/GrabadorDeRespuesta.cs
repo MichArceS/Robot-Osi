@@ -131,14 +131,20 @@ public class GrabadorDeRespuesta : MonoBehaviour
 
     private IEnumerator SubirAudioYProcesar(string path)
     {
+        //string url = "http://192.168.10.59/transcribe";
+        string url = "https://midilenguaje.espol.edu.ec/ai/api/attempts";
+        //string url = "http://localhost:8080/transcribe";
+
         Debug.Log("Subiendo audio a la API...");
 
         byte[] audioData = File.ReadAllBytes(path);
 
         WWWForm form = new WWWForm();
         form.AddBinaryData("audio", audioData, Path.GetFileName(path), "audio/wav");
+        form.AddField("model", "openai_turbo");
 
-        UnityWebRequest request = UnityWebRequest.Post("http://127.0.0.1:3658/m1/1010269-996503-default/evaluar-respuesta", form);
+        //UnityWebRequest request = UnityWebRequest.Post("http://127.0.0.1:3658/m1/1010269-996503-default/evaluar-respuesta", form);
+        UnityWebRequest request = UnityWebRequest.Post(url, form);
         yield return request.SendWebRequest();
 
         if (request.result == UnityWebRequest.Result.Success)
@@ -147,12 +153,14 @@ public class GrabadorDeRespuesta : MonoBehaviour
 
             string json = request.downloadHandler.text;
             RespuestaAPI respuesta = JsonUtility.FromJson<RespuestaAPI>(json);
+            respuesta.predicted_text = respuesta.predicted_text.ToLower();
+            respuesta.success = true;
             JuegoRobotLugaresPublicos juego = FindObjectOfType<JuegoRobotLugaresPublicos>();
             juego.StartCoroutine(juego.ProcesarResultadoDesdeAPI(respuesta));
         }
         else
         {
-            Debug.LogError("Error al subir audio: " + request.error);
+            Debug.LogError("Error al subir audio: " + request.downloadHandler.text);
         }
     }
 
