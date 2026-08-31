@@ -11,7 +11,7 @@ public class GrabadorDeRespuesta : MonoBehaviour
     public string minijuego;
     public int intento = 1;
 
-    [Header("Grabación")]
+    [Header("Grabaciï¿½n")]
     public int duracionGrabacion = 30;
     public int frecuencia = 16000;
 
@@ -28,7 +28,7 @@ public class GrabadorDeRespuesta : MonoBehaviour
 
     public void IniciarGrabacion()
     {
-        // Obtener código del jugador
+        // Obtener cï¿½digo del jugador
         codigoJugador = PlayerPrefs.GetString("PlayerCodeContinue", "Desconocido");
 
         // Obtener nombre de la pregunta desde el audio
@@ -44,15 +44,15 @@ public class GrabadorDeRespuesta : MonoBehaviour
 
         if (imagenREC != null) imagenREC.SetActive(true);
 
-        // Iniciar grabación
-        Debug.Log("Iniciando grabación...");
+        // Iniciar grabaciï¿½n
+        Debug.Log("Iniciando grabaciï¿½n...");
         clipGrabado = Microphone.Start(null, false, duracionGrabacion, frecuencia);
         Invoke(nameof(DetenerYProcesar), duracionGrabacion);
     }
 
     private void DetenerYProcesar()
     {
-        Debug.Log("Grabación terminada.");
+        Debug.Log("Grabaciï¿½n terminada.");
         Microphone.End(null);
 
         if (imagenREC != null) imagenREC.SetActive(false);
@@ -62,7 +62,7 @@ public class GrabadorDeRespuesta : MonoBehaviour
 
         if (!hablo)
         {
-            Debug.LogWarning("No se detectó voz. No se subirá el audio.");
+            Debug.LogWarning("No se detectï¿½ voz. No se subirï¿½ el audio.");
             return;
         }
 
@@ -72,7 +72,14 @@ public class GrabadorDeRespuesta : MonoBehaviour
         Debug.Log($"Audio guardado en: {rutaAudio}");
         Debug.Log($"JSON guardado en: {rutaJSON}");
 
-        StartCoroutine(SubirAudioYProcesar(rutaAudio));
+        JuegoRobotLugaresPublicos juego = FindObjectOfType<JuegoRobotLugaresPublicos>();
+        juego.StartCoroutine(juego.ProcesarResultadoDesdeAPI(new RespuestaAPI()
+        {
+            predicted_text = juego.preguntaActual,
+            success = true
+        }));
+
+        //StartCoroutine(SubirAudioYProcesar(rutaAudio));
     }
 
 
@@ -96,7 +103,7 @@ public class GrabadorDeRespuesta : MonoBehaviour
 
     private IEnumerator EsperarYDetectar()
     {
-        Debug.Log("Esperando hasta 1 minuto por detección de voz...");
+        Debug.Log("Esperando hasta 1 minuto por detecciï¿½n de voz...");
 
         float tiempoMaximo = 60f;
         float tiempoTranscurrido = 0f;
@@ -115,7 +122,7 @@ public class GrabadorDeRespuesta : MonoBehaviour
             {
                 if (Mathf.Abs(sample) > 0.01f)
                 {
-                    Debug.Log("Voz detectada. Iniciando grabación real.");
+                    Debug.Log("Voz detectada. Iniciando grabaciï¿½n real.");
                     habloUltimaVez = true;
                     IniciarGrabacion();  //inicia grabacion de 30s
                     yield break;
@@ -125,7 +132,7 @@ public class GrabadorDeRespuesta : MonoBehaviour
             tiempoTranscurrido += 1f;
         }
 
-        Debug.Log("No se detectó voz en 1 minuto.");
+        Debug.Log("No se detectï¿½ voz en 1 minuto.");
     }
 
 

@@ -7,6 +7,9 @@ using UnityEngine.SceneManagement;
 public class JuegoRobotLugaresPublicos : MonoBehaviour
 {
     [Header("Paneles")]
+    [Header("Cliente WebSocket")]
+    public RobotEmotionClient emotionClient;
+
     public GameObject panelOsiHablando;
     public GameObject panelOsiEsperando;
     public GameObject panelOsiEscuchando;
@@ -17,10 +20,10 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
     public AudioClip audio1;  // Bienvenida
     public AudioClip audio2;
     public AudioClip audio3;
-    public AudioClip audio4;  // Confirmación
-    public AudioClip audio5;  // Intro pregunta (si dice sí)
+    public AudioClip audio4;  // Confirmaciï¿½n
+    public AudioClip audio5;  // Intro pregunta (si dice sï¿½)
     public AudioClip audio6;  // Respuesta negativa
-    public AudioClip audio7;  // Repetición por inactividad
+    public AudioClip audio7;  // Repeticiï¿½n por inactividad
     public AudioClip audio8;  // Despedida final
     public AudioClip audio9;
     public AudioClip audio10;
@@ -58,7 +61,7 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
     public AudioClip audio27; // Mercado
     public AudioClip audio30; // Parque
 
-    [Header("Configuración")]
+    [Header("Configuraciï¿½n")]
     public int indiceEscenaPreguntas = 1;
     public int indiceEscenaAlternativa = 0;
     public float tiempoOsiEsperando = 20f;
@@ -81,7 +84,7 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
         { "mercado", false },
         { "parque", false }
     };
-    private string preguntaActual = "";
+    public string preguntaActual = "";
 
     private void Start()
     {
@@ -97,6 +100,9 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
         panelConfirmacion.SetActive(false);
     }
 
+        private string ultimaExpresion = "";
+    private float tiempoUltimaExpresion = 0f;
+
     private IEnumerator ReproducirAudio(AudioClip clip)
     {
         if (clip == null)
@@ -105,10 +111,34 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
             yield break;
         }
 
-        ultimoAudioReproducido = clip; // Aquí se guarda el clip actual
+        ultimoAudioReproducido = clip; // Aquï¿½ se guarda el clip actual
         audioSource.clip = clip;
         audioSource.Play();
-        yield return new WaitForSeconds(clip.length);
+
+        string animacionUsar = "hablar"; 
+        if (Time.time - tiempoUltimaExpresion < 0.5f)
+        {
+            animacionUsar = ultimaExpresion;
+        }
+        else
+        {
+            StartCoroutine(EnviarExpresion("hablar"));
+            animacionUsar = "hablar"; 
+        }
+
+        float tiempoRestante = clip.length;
+        
+        while (tiempoRestante > 0)
+        {
+            float tiempoEspera = Mathf.Min(6f, tiempoRestante);
+            yield return new WaitForSeconds(tiempoEspera);
+            tiempoRestante -= tiempoEspera;
+
+            if (tiempoRestante > 0 && Time.time - tiempoUltimaExpresion >= 5.9f)
+            {
+                StartCoroutine(EnviarExpresion(animacionUsar));
+            }
+        }
     }
 
     public void RepetirAudioActual()
@@ -122,7 +152,7 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("No hay audio reproducido aún para repetir.");
+            Debug.LogWarning("No hay audio reproducido aï¿½n para repetir.");
         }
     }
 
@@ -223,7 +253,7 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
         panelOsiEsperando.SetActive(true);
         yield return new WaitForSeconds(tiempoOsiEsperando);
 
-        // 3. Reproducir audio4 manualmente y luego mostrar confirmación
+        // 3. Reproducir audio4 manualmente y luego mostrar confirmaciï¿½n
         MostrarConfirmacion();
     }
 
@@ -262,7 +292,7 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
         }
         else
         {
-            Debug.Log("¡Todas las preguntas completadas!");
+            Debug.Log("ï¿½Todas las preguntas completadas!");
             yield return ReproducirAudio(audio8);  // Audio de despedida
             SceneManager.LoadScene(indiceEscenaAlternativa);
         }
@@ -275,23 +305,23 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
         panelOsiHablando.SetActive(true);
 
         // Pregunta y post-pregunta
-        //StartCoroutine(EnviarExpresion("enfermo_hablando"));
+        StartCoroutine(EnviarExpresion("enfermo_hablando"));
         yield return ReproducirAudio(audio17); // pregunta
-        //StartCoroutine(EnviarExpresion("enfermo_hablando"));
+        StartCoroutine(EnviarExpresion("enfermo_hablando"));
         yield return ReproducirAudio(audio18); // dilo fuerte
 
         panelOsiHablando.SetActive(false);
         panelOsiEscuchando.SetActive(true);
 
-        Debug.Log("Osi hizo la pregunta. Inicia grabación de voz.");
+        Debug.Log("Osi hizo la pregunta. Inicia grabaciï¿½n de voz.");
 
         grabadorDeRespuesta.EsperarYGrabarCuandoHable(this);
-        yield return new WaitForSeconds(60f); // mismo tiempo de espera, pero ahora solo para detección
+        yield return new WaitForSeconds(60f); // mismo tiempo de espera, pero ahora solo para detecciï¿½n
 
         if (!grabadorDeRespuesta.HabloEnUltimaGrabacion())
         {
             intentosSinHablar++;
-            Debug.LogWarning("Usuario no habló. Intento " + intentosSinHablar);
+            Debug.LogWarning("Usuario no hablï¿½. Intento " + intentosSinHablar);
 
             if (intentosSinHablar >= 3)
             {
@@ -308,8 +338,8 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
         else
         {
             intentosSinHablar = 0;
-            Debug.Log("Usuario habló, continuar el flujo normal...");
-            // Continúa el flujo normal del juego aquí
+            Debug.Log("Usuario hablï¿½, continuar el flujo normal...");
+            // Continï¿½a el flujo normal del juego aquï¿½
         }
     }
 
@@ -320,23 +350,23 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
         panelOsiHablando.SetActive(true);
 
         // Pregunta y post-pregunta
-        //StartCoroutine(EnviarExpresion("curioso_hablando"));
+        StartCoroutine(EnviarExpresion("curioso_hablando"));
         yield return ReproducirAudio(audio21);
-        //StartCoroutine(EnviarExpresion("curioso_hablando"));
+        StartCoroutine(EnviarExpresion("curioso_hablando"));
         yield return ReproducirAudio(audio18);
 
         panelOsiHablando.SetActive(false);
         panelOsiEscuchando.SetActive(true);
 
-        Debug.Log("Osi hizo la pregunta. Inicia grabación de voz.");
+        Debug.Log("Osi hizo la pregunta. Inicia grabaciï¿½n de voz.");
 
         grabadorDeRespuesta.EsperarYGrabarCuandoHable(this);
-        yield return new WaitForSeconds(60f); // mismo tiempo de espera, pero ahora solo para detección
+        yield return new WaitForSeconds(60f); // mismo tiempo de espera, pero ahora solo para detecciï¿½n
 
         if (!grabadorDeRespuesta.HabloEnUltimaGrabacion())
         {
             intentosSinHablar++;
-            Debug.LogWarning("Usuario no habló. Intento " + intentosSinHablar);
+            Debug.LogWarning("Usuario no hablï¿½. Intento " + intentosSinHablar);
 
             if (intentosSinHablar >= 3)
             {
@@ -353,8 +383,8 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
         else
         {
             intentosSinHablar = 0;
-            Debug.Log("Usuario habló, continuar el flujo normal...");
-            // Continúa el flujo normal del juego aquí
+            Debug.Log("Usuario hablï¿½, continuar el flujo normal...");
+            // Continï¿½a el flujo normal del juego aquï¿½
         }
     }
 
@@ -365,23 +395,23 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
         panelOsiHablando.SetActive(true);
 
         // Pregunta y post-pregunta
-        //StartCoroutine(EnviarExpresion("hambriento_hablando"));
+        StartCoroutine(EnviarExpresion("hambriento_hablando"));
         yield return ReproducirAudio(audio24);
-        //StartCoroutine(EnviarExpresion("hambriento_hablando"));
+        StartCoroutine(EnviarExpresion("hambriento_hablando"));
         yield return ReproducirAudio(audio18);
 
         panelOsiHablando.SetActive(false);
         panelOsiEscuchando.SetActive(true);
 
-        Debug.Log("Osi hizo la pregunta. Inicia grabación de voz.");
+        Debug.Log("Osi hizo la pregunta. Inicia grabaciï¿½n de voz.");
 
         grabadorDeRespuesta.EsperarYGrabarCuandoHable(this);
-        yield return new WaitForSeconds(60f); // mismo tiempo de espera, pero ahora solo para detección
+        yield return new WaitForSeconds(60f); // mismo tiempo de espera, pero ahora solo para detecciï¿½n
 
         if (!grabadorDeRespuesta.HabloEnUltimaGrabacion())
         {
             intentosSinHablar++;
-            Debug.LogWarning("Usuario no habló. Intento " + intentosSinHablar);
+            Debug.LogWarning("Usuario no hablï¿½. Intento " + intentosSinHablar);
 
             if (intentosSinHablar >= 3)
             {
@@ -398,8 +428,8 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
         else
         {
             intentosSinHablar = 0;
-            Debug.Log("Usuario habló, continuar el flujo normal...");
-            // Continúa el flujo normal del juego aquí
+            Debug.Log("Usuario hablï¿½, continuar el flujo normal...");
+            // Continï¿½a el flujo normal del juego aquï¿½
         }
     }
 
@@ -410,23 +440,23 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
         panelOsiHablando.SetActive(true);
 
         // Pregunta y post-pregunta
-        //StartCoroutine(EnviarExpresion("curioso_hablando"));
+        StartCoroutine(EnviarExpresion("curioso_hablando"));
         yield return ReproducirAudio(audio27);
-        //StartCoroutine(EnviarExpresion("curioso_hablando"));
+        StartCoroutine(EnviarExpresion("curioso_hablando"));
         yield return ReproducirAudio(audio18);
 
         panelOsiHablando.SetActive(false);
         panelOsiEscuchando.SetActive(true);
 
-        Debug.Log("Osi hizo la pregunta. Inicia grabación de voz.");
+        Debug.Log("Osi hizo la pregunta. Inicia grabaciï¿½n de voz.");
 
         grabadorDeRespuesta.EsperarYGrabarCuandoHable(this);
-        yield return new WaitForSeconds(60f); // mismo tiempo de espera, pero ahora solo para detección
+        yield return new WaitForSeconds(60f); // mismo tiempo de espera, pero ahora solo para detecciï¿½n
 
         if (!grabadorDeRespuesta.HabloEnUltimaGrabacion())
         {
             intentosSinHablar++;
-            Debug.LogWarning("Usuario no habló. Intento " + intentosSinHablar);
+            Debug.LogWarning("Usuario no hablï¿½. Intento " + intentosSinHablar);
 
             if (intentosSinHablar >= 3)
             {
@@ -443,8 +473,8 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
         else
         {
             intentosSinHablar = 0;
-            Debug.Log("Usuario habló, continuar el flujo normal...");
-            // Continúa el flujo normal del juego aquí
+            Debug.Log("Usuario hablï¿½, continuar el flujo normal...");
+            // Continï¿½a el flujo normal del juego aquï¿½
         }
     }
 
@@ -455,23 +485,23 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
         panelOsiHablando.SetActive(true);
 
         // Pregunta y post-pregunta
-        //StartCoroutine(EnviarExpresion("curioso_hablando"));
+        StartCoroutine(EnviarExpresion("curioso_hablando"));
         yield return ReproducirAudio(audio30);
-        //StartCoroutine(EnviarExpresion("curioso_hablando"));
+        StartCoroutine(EnviarExpresion("curioso_hablando"));
         yield return ReproducirAudio(audio18);
 
         panelOsiHablando.SetActive(false);
         panelOsiEscuchando.SetActive(true);
 
-        Debug.Log("Osi hizo la pregunta. Inicia grabación de voz.");
+        Debug.Log("Osi hizo la pregunta. Inicia grabaciï¿½n de voz.");
 
         grabadorDeRespuesta.EsperarYGrabarCuandoHable(this);
-        yield return new WaitForSeconds(60f); // mismo tiempo de espera, pero ahora solo para detección
+        yield return new WaitForSeconds(60f); // mismo tiempo de espera, pero ahora solo para detecciï¿½n
 
         if (!grabadorDeRespuesta.HabloEnUltimaGrabacion())
         {
             intentosSinHablar++;
-            Debug.LogWarning("Usuario no habló. Intento " + intentosSinHablar);
+            Debug.LogWarning("Usuario no hablï¿½. Intento " + intentosSinHablar);
 
             if (intentosSinHablar >= 3)
             {
@@ -488,8 +518,8 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
         else
         {
             intentosSinHablar = 0;
-            Debug.Log("Usuario habló, continuar el flujo normal...");
-            // Continúa el flujo normal del juego aquí
+            Debug.Log("Usuario hablï¿½, continuar el flujo normal...");
+            // Continï¿½a el flujo normal del juego aquï¿½
         }
     }
 
@@ -538,7 +568,7 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
 
             if (preguntaActual.Contains("hospital"))
             {
-                //StartCoroutine(EnviarExpresion("alegre_hablando"));
+                StartCoroutine(EnviarExpresion("alegre_hablando"));
                 yield return ReproducirAudio(audio40);
                 yield return ReproducirAudio(audio19);
                 yield return ReproducirAudio(audio9);
@@ -547,7 +577,7 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
             }
             else if (preguntaActual.Contains("escuela"))
             {
-                //StartCoroutine(EnviarExpresion("alegre_hablando"));
+                StartCoroutine(EnviarExpresion("alegre_hablando"));
                 yield return ReproducirAudio(audio39);
                 yield return ReproducirAudio(audio22);
                 yield return ReproducirAudio(audio12);
@@ -556,7 +586,7 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
             }
             else if (preguntaActual.Contains("restaurante"))
             {
-                //StartCoroutine(EnviarExpresion("alegre_hablando"));
+                StartCoroutine(EnviarExpresion("alegre_hablando"));
                 yield return ReproducirAudio(audio38);
                 yield return ReproducirAudio(audio25);
                 yield return ReproducirAudio(audio9);
@@ -566,7 +596,7 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
             }
             else if (preguntaActual.Contains("mercado"))
             {
-                //StartCoroutine(EnviarExpresion("alegre_hablando"));
+                StartCoroutine(EnviarExpresion("alegre_hablando"));
                 yield return ReproducirAudio(audio40);
                 yield return ReproducirAudio(audio29);
                 yield return ReproducirAudio(audio16);
@@ -575,7 +605,7 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
             }
             else if (preguntaActual.Contains("parque"))
             {
-                //StartCoroutine(EnviarExpresion("alegre_hablando"));
+                StartCoroutine(EnviarExpresion("alegre_hablando"));
                 yield return ReproducirAudio(audio42);
                 yield return ReproducirAudio(audio31);
                 yield return StartCoroutine(DespedidaYSalir());
@@ -586,7 +616,7 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
             erroresConsecutivos++;
             Debug.Log("Respuesta incorrecta (" + erroresConsecutivos + "): " + respuesta.predicted_text);
 
-            // Retroalimentación por intento
+            // Retroalimentaciï¿½n por intento
             AudioClip audioError = erroresConsecutivos switch
             {
                 1 => audio37,
@@ -596,7 +626,7 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
             };
 
             if (audioError != null)
-                //StartCoroutine(EnviarExpresion("sorprendido_hablando"));
+                StartCoroutine(EnviarExpresion("sorprendido_hablando"));
                 yield return ReproducirAudio(audioError);
 
             if (erroresConsecutivos >= 3)
@@ -604,7 +634,7 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
                 erroresConsecutivos = 0;
                 if (preguntaActual.Contains("hospital"))
                 {
-                    progresoPreguntas[preguntaActual] = true; // Se marca aunque falló
+                    progresoPreguntas[preguntaActual] = true; // Se marca aunque fallï¿½
                     yield return ReproducirAudio(audio20);
                     yield return StartCoroutine(ProcederAPreguntas());
                 }
@@ -670,37 +700,29 @@ public class JuegoRobotLugaresPublicos : MonoBehaviour
         panelOsiHablando.SetActive(true);
         yield return ReproducirAudio(audio33);
         yield return ReproducirAudio(audio34);
-        //StartCoroutine(EnviarExpresion("sorprendido_hablando"));
-        //StartCoroutine(EnviarExpresion("alegre_hablando"));
-        //StartCoroutine(EnviarExpresion("alegre_hablando"));
+        StartCoroutine(EnviarExpresion("sorprendido_hablando"));
+        StartCoroutine(EnviarExpresion("alegre_hablando"));
+        StartCoroutine(EnviarExpresion("alegre_hablando"));
         SceneManager.LoadScene(indiceEscenaAlternativa);
     }
 
-    public IEnumerator EnviarExpresion(string expresion)
+        public IEnumerator EnviarExpresion(string expresion)
     {
-        string url = "http://192.168.0.88:5000/accion";
+        string expresionLimpia = expresion.Replace("_hablando", "").ToLower();
+        
+        ultimaExpresion = expresionLimpia;
+        tiempoUltimaExpresion = Time.time;
 
-        AccionData data = new AccionData { accion = expresion };
-        string json = JsonUtility.ToJson(data);
-
-        using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
+        if (emotionClient != null)
         {
-            byte[] jsonToSend = System.Text.Encoding.UTF8.GetBytes(json);
-            request.uploadHandler = new UploadHandlerRaw(jsonToSend);
-            request.downloadHandler = new DownloadHandlerBuffer();
-            request.SetRequestHeader("Content-Type", "application/json");
-
-            yield return request.SendWebRequest();
-
-            if (request.result == UnityWebRequest.Result.Success)
-            {
-                Debug.Log("Expresión enviada a Raspberry Pi: " + expresion);
-            }
-            else
-            {
-                Debug.LogError("Error al enviar expresión: " + request.error);
-            }
+            emotionClient.SendEmotion(expresionLimpia);
         }
+        else
+        {
+            Debug.LogWarning("No se ha asignado emotionClient en JuegoRobotLugaresPublicos.");
+        }
+        
+        yield return null;
     }
 
     public IEnumerator EnviarExpresion(string expresion, bool test)
